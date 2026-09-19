@@ -289,15 +289,11 @@ function WaitlistPage() {
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
       >
-        <a href="https://talent-factory-tau.vercel.app/" className="nav__logo" target="_blank" rel="noopener">
+        <a href="#" className="nav__logo">
           <svg viewBox="0 0 172 172" width="30" height="30" aria-hidden="true">
             <path fill="#131216" d="M86,0C38.5,0,0,38.5,0,86s38.5,86,86,86,86-38.5,86-86S133.5,0,86,0ZM127.56,122.24l-1.5,1.44c-2.73,2.62-5.72,4.98-8.9,7.01-8,5.12-17.24,8.21-26.72,8.93-1.51.11-3,.17-4.45.17s-2.94-.06-4.44-.17c-9.49-.72-18.73-3.81-26.73-8.93-3.18-2.04-6.18-4.4-8.9-7.02l-1.5-1.44V52.59h17.89v61.55c5.87,4.32,12.76,6.94,20.03,7.59,2.41.22,4.86.22,7.28,0,7.27-.65,14.17-3.27,20.03-7.59v-51.81h-14.72v44.85h-17.89V32.82l4.43-.4c3-.27,6.04-.27,9.04,0l4.43.4v11.62h32.62v77.8Z"/>
           </svg>
           <span>Talent Factory</span>
-        </a>
-        <a href="https://talent-factory-tau.vercel.app/" className="nav__visit" target="_blank" rel="noopener">
-          Visit main site
-          <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
         </a>
       </motion.header>
 
@@ -318,9 +314,9 @@ function WaitlistPage() {
                 Early access — limited spots
               </motion.div>
 
-              <motion.h1 className="headline-hero-minimal" variants={heroItem}>
+              <motion.h2 className="headline-hero-minimal" variants={heroItem}>
                 The people who keep your business running.
-              </motion.h1>
+              </motion.h2>
 
               <motion.p className="lede-hero-minimal" variants={heroItem}>
                 Talent Factory trains and places the operators that power great companies — executive assistants, accountants, marketers, ops leads, and more.
@@ -457,7 +453,7 @@ function WaitlistPage() {
                   badge: 'For businesses', heading: 'Stop winging\nthe hire.',
                   body: "You shouldn't have to scroll through job boards, screen strangers and cross your fingers. We hand you someone we trained, tested and would stake our name on.",
                   list: ['Pre-vetted shortlist within days','Contracts & onboarding handled',"Free re-match if it doesn't work",'Hire for keeps, by project, or hand us a function'],
-                  cta: 'Get early access ↓', ctaClass: 'panel__btn--light',
+                  cta: 'Get early access', ctaClass: 'panel__btn--light',
                 },
                 {
                   dark: false,
@@ -526,9 +522,7 @@ function WaitlistPage() {
                 transition={{ type: 'spring', stiffness: 400, damping: 18 }}
               >
                 Secure my spot now
-                <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M8 3l5 5-5 5M3 8h10"/></svg>
               </motion.a>
-              <p className="final-cta__note">No commitment. No credit card. Just your email.</p>
             </div>
           </section>
         </Reveal>
@@ -547,14 +541,14 @@ function WaitlistPage() {
           <nav className="footer__nav" aria-label="Footer">
             <div>
               <p className="footer__nav-head">Platform</p>
-              <a href="https://talent-factory-tau.vercel.app/find-talent" target="_blank" rel="noopener">Find Talent</a>
-              <a href="https://talent-factory-tau.vercel.app/pricing" target="_blank" rel="noopener">Pricing</a>
-              <a href="https://talent-factory-tau.vercel.app/" target="_blank" rel="noopener">Hire Someone</a>
+              <a href="#">Find Talent</a>
+              <a href="#">Pricing</a>
+              <a href="#">Hire Someone</a>
             </div>
             <div>
               <p className="footer__nav-head">For Talent</p>
-              <a href="https://talent-factory-tau.vercel.app/for-talent" target="_blank" rel="noopener">Why Talent Factory</a>
-              <a href="https://talent-factory-tau.vercel.app/join" target="_blank" rel="noopener">Join as Talent</a>
+              <a href="#">Why Talent Factory</a>
+              <a href="#">Join as Talent</a>
             </div>
           </nav>
         </div>

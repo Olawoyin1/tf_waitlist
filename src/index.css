@@ -377,17 +377,17 @@ body {
    NAV
    ═══════════════════════════════════════════ */
 .nav {
-  position: fixed;
+  position: absolute;
   top: 0; left: 0; right: 0;
+  max-width: 1240px; /* 1160px + 40px + 40px padding */
+  margin: 0 auto;
   height: 72px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 40px;
-  background: rgba(252, 250, 246, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--border);
+  background: transparent;
+  border-bottom: none;
   z-index: 100;
 }
 
@@ -440,7 +440,7 @@ body {
 .hero-minimal {
   background-color: var(--cream);
   color: var(--text-main);
-  padding: 180px 40px 200px;
+  /* padding: 180px 40px 200px; */
   position: relative;
   overflow: hidden;
   text-align: center;
@@ -483,10 +483,10 @@ body {
 
 .headline-hero-minimal {
   font-family: var(--font-h);
-  font-size: clamp(48px, 6vw, 84px);
+  font-size: clamp(36px, 4.5vw, 60px);
   font-weight: 700;
   line-height: 1.05;
-  letter-spacing: -2.5px;
+  letter-spacing: -2px;
   margin-bottom: 24px;
 }
 .text-gray {
@@ -544,16 +544,7 @@ body {
   top: 100px;
 }
 
-/* Subtle gold top border */
-.form-card::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 4px;
-  background: var(--gold);
-  border-top-left-radius: var(--r-xl);
-  border-top-right-radius: var(--r-xl);
-}
+/* Subtle gold top border removed per user request */
 
 .form-card__head {
   display: flex;
@@ -1396,6 +1387,7 @@ body {
 
 @media (max-width: 600px) {
   .nav { padding: 0 24px; }
+  .hero-minimal { padding: 80px 20px 60px; }
   .hero-dark { padding: 120px 24px 160px; }
   .overlap-container { padding: 0 24px; margin-top: -100px; }
   .headline-hero { font-size: 40px; }
@@ -2161,7 +2153,7 @@ body {
   grid-template-columns: 1fr 440px;
   gap: 48px;
   align-items: center;
-  padding: 32px 0 48px;
+  /* padding: 32px 0 48px; */
 }
 
 .hero-copy-col {
