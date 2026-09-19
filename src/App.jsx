@@ -229,15 +229,13 @@ function WaitlistForm() {
           <Select
             value={fields.interest}
             onValueChange={set('interest')}
-            placeholder="I am an HR professional…"
+            placeholder="I am a…"
             hasError={!!errors.interest}
             icon={<RiBriefcaseLine />}
             options={[
-              { value: 'Practising HR professional', label: 'Practising HR professional' },
-              { value: 'HR specialist / HRBP',        label: 'HR specialist / HRBP' },
-              { value: 'HR manager / leader',          label: 'HR manager / leader' },
-              { value: 'HR consultant',                label: 'HR consultant' },
-              { value: 'Other HR role',                label: 'Other HR role' },
+              { value: 'Founder/business owner looking to hire', label: 'Founder/business owner looking to hire' },
+              { value: 'Talent looking for roles',               label: 'Talent looking for roles' },
+              { value: 'HR looking to list',                     label: 'HR looking to list' },
             ]}
           />
           {errors.interest && <span className="field-error">{errors.interest}</span>}
@@ -315,11 +313,11 @@ function WaitlistPage() {
               </motion.div>
 
               <motion.h2 className="headline-hero-minimal" variants={heroItem}>
-                The people who keep your business running.
+                Every great company runs on people you never see
               </motion.h2>
 
               <motion.p className="lede-hero-minimal" variants={heroItem}>
-                Talent Factory trains and places the operators that power great companies — executive assistants, accountants, marketers, ops leads, and more.
+                The assistant guarding the CEO's calendar. The social media manager who is the brand's voice. The accountant keeping the lights on. We train and place the operators behind the business, so you can get back to running it.
               </motion.p>
             </div>
 
