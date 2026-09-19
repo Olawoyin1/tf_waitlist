@@ -2,7 +2,7 @@
 // TALENT FACTORY — WAITLIST SCRIPT
 // =============================================
 
-const API_URL = 'https://your-api-endpoint.com/waitlist'; // <-- swap this
+const API_URL = 'https://tf-backend-t5k7.onrender.com/api/waitlist';
 
 const form        = document.getElementById('waitlist-form');
 const submitBtn   = document.getElementById('submit-btn');

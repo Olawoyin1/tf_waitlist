@@ -9,7 +9,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { AdminDashboard } from './components/AdminDashboard'
 import { Toaster, toast } from 'sonner'
 
-const API_URL = 'http://localhost:5000/api/waitlist'
+const API_URL = 'https://tf-backend-t5k7.onrender.com/api/waitlist'
 
 const LOGOS = Array.from({ length: 10 }, (_, i) =>
   `https://talent-factory-tau.vercel.app/logos/logo-${i + 1}.svg`

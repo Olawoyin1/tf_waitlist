@@ -4,7 +4,7 @@ import { RiDownloadCloud2Line, RiRefreshLine, RiLogoutBoxLine, RiUserLine, RiGro
 import { toast } from 'sonner';
 import './AdminDashboard.css';
 
-const API_URL = 'http://localhost:5000/api/waitlist/admin';
+const API_URL = 'https://tf-backend-t5k7.onrender.com/api/waitlist/admin';
 
 const TF_LOGO = (
   <svg viewBox="0 0 172 172" width="26" height="26" aria-hidden="true">
