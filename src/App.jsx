@@ -3,9 +3,13 @@ import { motion, AnimatePresence, useInView } from 'framer-motion'
 import { useRef } from 'react'
 import { Select } from './components/Select'
 import { GridVignetteBackground } from './components/ui/vignette-grid-background'
-import { RiUserLine } from 'react-icons/ri'
+import { RiUserLine, RiMailLine, RiBriefcaseLine, RiBuildingLine, RiCheckLine } from 'react-icons/ri'
+import ConfettiExplosion from 'react-confetti-explosion'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { AdminDashboard } from './components/AdminDashboard'
+import { Toaster, toast } from 'sonner'
 
-const API_URL = 'https://your-api-endpoint.com/waitlist'
+const API_URL = 'http://localhost:5000/api/waitlist'
 
 const LOGOS = Array.from({ length: 10 }, (_, i) =>
   `https://talent-factory-tau.vercel.app/logos/logo-${i + 1}.svg`
@@ -84,11 +88,12 @@ function CountUp({ target, suffix = '' }) {
 
 // ── Waitlist Form ──────────────────────────────────────────────────────────────
 function WaitlistForm() {
-  const [fields, setFields] = useState({ firstName: '', lastName: '', email: '', interest: '', company: '' })
+  const [fields, setFields] = useState({ fullName: '', email: '', interest: '', company: '' })
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
-  const [successEmail, setSuccessEmail] = useState('')
+  const [successData, setSuccessData] = useState(null)
+  const [showConfetti, setShowConfetti] = useState(false)
 
   const set = (key) => (e) => {
     const val = typeof e === 'string' ? e : e.target.value
@@ -98,10 +103,9 @@ function WaitlistForm() {
 
   const validate = () => {
     const e = {}
-    if (!fields.firstName.trim()) e.firstName = 'Please enter your first name.'
-    if (!fields.lastName.trim())  e.lastName  = 'Please enter your last name.'
-    if (!fields.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fields.email)) e.email = 'Please enter a valid email.'
-    if (!fields.interest) e.interest = 'Please make a selection.'
+    if (!fields.fullName.trim()) e.fullName = 'Please enter your full name.'
+    if (!fields.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fields.email)) e.email = 'Please enter a valid email address.'
+    if (!fields.interest) e.interest = 'Please select an option.'
     return e
   }
 
@@ -111,116 +115,171 @@ function WaitlistForm() {
     if (Object.keys(errs).length) { setErrors(errs); return }
     setLoading(true)
     try {
-      await fetch(API_URL, {
+      const res = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          first_name: fields.firstName.trim(),
-          last_name: fields.lastName.trim(),
+          fullName: fields.fullName.trim(),
           email: fields.email.trim(),
           interest: fields.interest,
           company: fields.company.trim(),
-          submitted_at: new Date().toISOString(),
         }),
       })
-    } catch (_) {}
-    setSuccessEmail(fields.email.trim())
+      const data = await res.json()
+      if (!res.ok) {
+        if (res.status === 409) {
+          toast.warning('Already registered', {
+            description: 'This email is already on our waitlist. Check your inbox for your confirmation.',
+          })
+        } else {
+          toast.error('Something went wrong', {
+            description: data.message || 'Please try again.',
+          })
+        }
+        setLoading(false)
+        return
+      }
+      setSuccessData(data.data)
+      setSuccess(true)
+      setShowConfetti(true)
+      toast.success("You're on the priority list!", {
+        description: `Spot reserved for ${data.data?.email}. Check your inbox!`,
+      })
+    } catch (_) {
+      toast.error('Network error', {
+        description: 'Please check your connection and try again.',
+      })
+    }
     setLoading(false)
-    setSuccess(true)
-    document.getElementById('waitlist-card')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
   }
 
   if (success) return (
-    <motion.div
-      className="success show"
-      aria-live="polite"
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-    >
-      <div className="success__ring">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" width="28" height="28"><polyline points="20 6 9 17 4 12"/></svg>
-      </div>
-      <h2>You're on the list!</h2>
-      <p>Spot secured for <strong>{successEmail}</strong>. We'll email you when early access opens.</p>
-      <a href="https://talent-factory-tau.vercel.app/" target="_blank" rel="noopener" className="success__link">
-        Explore Talent Factory
-        <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
-      </a>
-    </motion.div>
+    <>
+      {showConfetti && <ConfettiExplosion onDone={() => setShowConfetti(false)} />}
+      <motion.div
+        className="form-success-card"
+        initial={{ opacity: 0, scale: 0.94, y: 10 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+      >
+        <div className="form-success-badge">
+          <RiCheckLine size={24} />
+        </div>
+        <h3 className="form-success-title">You're on the priority list!</h3>
+        <p className="form-success-desc">
+          Spot reserved for <strong>{successData?.email}</strong>. A confirmation email is on its way to your inbox!
+        </p>
+        <div className="form-success-actions">
+          <a href="https://talentfactoryhq.substack.com" target="_blank" rel="noopener noreferrer" className="form-success-btn form-success-btn--primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="15" height="15" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            Subscribe to Newsletter
+          </a>
+          <a href="https://chat.whatsapp.com/Gg3pCbWCa6iDlV53deSqBL?s=cl&p=a&mlu=4&ilr=4" target="_blank" rel="noopener noreferrer" className="form-success-btn form-success-btn--outline">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="15" height="15" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            Join the Community
+          </a>
+        </div>
+      </motion.div>
+    </>
   )
 
   return (
-    <form onSubmit={handleSubmit} noValidate>
-      <div className="form-card__head">
-        <div className="form-card__icon">
-          <RiUserLine size={22} />
-        </div>
-        <div>
-          <h2 className="form-card__title">Join the waitlist</h2>
-          <p className="form-card__sub">We'll reach out when your spot opens.</p>
-        </div>
+    <form onSubmit={handleSubmit} noValidate className="mini-form">
+      {/* Form Header */}
+      <div className="mini-form__head">
+        <h2 className="mini-form__title">Join the waitlist</h2>
+        <p className="mini-form__sub">Be first in line when learning cohorts launch.</p>
       </div>
 
-      <div className="fields">
-        <div className="field-row">
-          <div className="field">
-            <label htmlFor="first-name">First name</label>
-            <input id="first-name" type="text" placeholder="Ada" autoComplete="given-name" value={fields.firstName} onChange={set('firstName')} className={errors.firstName ? 'err' : ''} />
-            {errors.firstName && <span className="ferr show">{errors.firstName}</span>}
-          </div>
-          <div className="field">
-            <label htmlFor="last-name">Last name</label>
-            <input id="last-name" type="text" placeholder="Lovelace" autoComplete="family-name" value={fields.lastName} onChange={set('lastName')} className={errors.lastName ? 'err' : ''} />
-            {errors.lastName && <span className="ferr show">{errors.lastName}</span>}
-          </div>
-        </div>
+      {/* Input Fields */}
+      <div className="fields-group">
         <div className="field">
-          <label htmlFor="email">Work email</label>
-          <input id="email" type="email" placeholder="ada@company.com" autoComplete="email" value={fields.email} onChange={set('email')} className={errors.email ? 'err' : ''} />
-          {errors.email && <span className="ferr show">{errors.email}</span>}
+          <div className="input-wrap">
+            <RiUserLine className="input-icon" />
+            <input
+              id="full-name"
+              type="text"
+              autoComplete="name"
+              placeholder="Full name"
+              value={fields.fullName}
+              onChange={set('fullName')}
+              className={errors.fullName ? 'err' : ''}
+            />
+          </div>
+          {errors.fullName && <span className="field-error">{errors.fullName}</span>}
         </div>
+
         <div className="field">
-          <label htmlFor="interest-trigger">I'm here as</label>
+          <div className="input-wrap">
+            <RiMailLine className="input-icon" />
+            <input
+              id="email"
+              type="email"
+              autoComplete="email"
+              placeholder="Email address"
+              value={fields.email}
+              onChange={set('email')}
+              className={errors.email ? 'err' : ''}
+            />
+          </div>
+          {errors.email && <span className="field-error">{errors.email}</span>}
+        </div>
+
+        <div className="field">
           <Select
             value={fields.interest}
             onValueChange={set('interest')}
-            placeholder="Choose one…"
+            placeholder="I am an HR professional…"
             hasError={!!errors.interest}
+            icon={<RiBriefcaseLine />}
             options={[
-              { value: 'business', label: 'A business looking to hire' },
-              { value: 'talent',   label: 'Talent looking to be placed' },
-              { value: 'both',     label: 'Both' },
+              { value: 'Practising HR professional', label: 'Practising HR professional' },
+              { value: 'HR specialist / HRBP',        label: 'HR specialist / HRBP' },
+              { value: 'HR manager / leader',          label: 'HR manager / leader' },
+              { value: 'HR consultant',                label: 'HR consultant' },
+              { value: 'Other HR role',                label: 'Other HR role' },
             ]}
           />
-          {errors.interest && <span className="ferr show">{errors.interest}</span>}
+          {errors.interest && <span className="field-error">{errors.interest}</span>}
         </div>
+
         <div className="field">
-          <label htmlFor="company">Company or role <span className="opt">(optional)</span></label>
-          <input id="company" type="text" placeholder="Acme Inc. or Freelance" autoComplete="organization" value={fields.company} onChange={set('company')} />
+          <div className="input-wrap">
+            <RiBuildingLine className="input-icon" />
+            <input
+              id="company"
+              type="text"
+              autoComplete="organization"
+              placeholder="Company or organisation (optional)"
+              value={fields.company}
+              onChange={set('company')}
+            />
+          </div>
         </div>
       </div>
 
-      <motion.button
-        className={`submit-btn${loading ? ' loading' : ''}`}
-        type="submit"
-        disabled={loading}
-        whileHover={{ scale: 1.02, y: -1 }}
-        whileTap={{ scale: 0.98 }}
-        transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-      >
-        <span className="submit-btn__text">
-          Secure my spot
-          <svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
-        </span>
-        <span className="submit-btn__spin" aria-hidden="true"></span>
-      </motion.button>
+      {/* Submit Button */}
+      <div className="submit-wrap">
+        <motion.button
+          className={`submit-btn-modern${loading ? ' loading' : ''}`}
+          type="submit"
+          disabled={loading}
+          whileHover={{ scale: 1.015, y: -1 }}
+          whileTap={{ scale: 0.985 }}
+          transition={{ type: 'spring', stiffness: 450, damping: 25 }}
+        >
+          <span className="submit-btn-modern__content">
+            <span>Join Waitlist</span>
+          </span>
+          <span className="submit-btn-modern__spin" aria-hidden="true" />
+        </motion.button>
+      </div>
     </form>
   )
 }
 
 // ── Main App ───────────────────────────────────────────────────────────────────
-export default function App() {
+function WaitlistPage() {
   return (
     <>
       {/* NAV */}
@@ -253,56 +312,49 @@ export default function App() {
             initial="hidden"
             animate="show"
           >
-            <motion.div className="badge badge--light" variants={heroItem}>
-              <span className="badge__pulse"></span>
-              Early access — limited spots
-            </motion.div>
+            <div className="hero-copy-col">
+              <motion.div className="badge badge--light" variants={heroItem}>
+                <span className="badge__pulse"></span>
+                Early access — limited spots
+              </motion.div>
 
-            <motion.h1 className="headline-hero-minimal" variants={heroItem}>
-              The people who keep your business running.
-            </motion.h1>
+              <motion.h1 className="headline-hero-minimal" variants={heroItem}>
+                The people who keep your business running.
+              </motion.h1>
 
-            <motion.p className="lede-hero-minimal" variants={heroItem}>
-              Talent Factory trains and places the operators that power great companies — executive assistants, accountants, marketers, ops leads, and more.
-            </motion.p>
+              <motion.p className="lede-hero-minimal" variants={heroItem}>
+                Talent Factory trains and places the operators that power great companies — executive assistants, accountants, marketers, ops leads, and more.
+              </motion.p>
+            </div>
 
-            <motion.a
-              href="#waitlist-card"
-              className="hero-btn-primary"
-              variants={heroItem}
-              whileHover={{ scale: 1.04, y: -2 }}
-              whileTap={{ scale: 0.97 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 18 }}
+            <motion.div
+              className="hero-form-col"
+              variants={scaleIn}
+              transition={{ delay: 0.2 }}
             >
-              Join the waitlist
-              <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
-            </motion.a>
+              <div className="form-card" id="waitlist-card">
+                <WaitlistForm />
+              </div>
+            </motion.div>
           </motion.div>
         </section>
 
-        {/* FORM */}
-        <div className="overlap-container">
-          <motion.div
-            className="form-card"
-            id="waitlist-card"
-            variants={scaleIn}
-            initial="hidden"
-            animate="show"
-            transition={{ delay: 0.55 }}
-          >
-            <WaitlistForm />
-          </motion.div>
-        </div>
-
-        {/* MARQUEE */}
+        {/* PARTNER COMPANIES */}
         <Reveal>
-          <section className="marquee-section">
-            <p className="eyebrow marquee-section__eyebrow">Companies building lean, capable teams.</p>
-            <div className="marquee-container">
-              <div className="marquee-track">
-                {[...LOGOS, ...LOGOS].map((src, i) => (
-                  <img key={i} src={src} alt="" className="marquee-logo" />
-                ))}
+          <section className="partner-section">
+            <div className="partner-section__inner">
+              <p className="partner-label">TRUSTED BY HR PROFESSIONALS FROM LEADING ORGANISATIONS</p>
+              <div className="partner-marquee-container">
+                <div className="partner-marquee-track">
+                  {[
+                    'MTN','Remoteworkher','TechCabal','Xara','BMoni',
+                    'GetSeen','Ruxe','SendCoins','BizFlex','CompasAI',
+                    'MTN','Remoteworkher','TechCabal','Xara','BMoni',
+                    'GetSeen','Ruxe','SendCoins','BizFlex','CompasAI',
+                  ].map((name, i) => (
+                    <span key={i} className="partner-name">{name}</span>
+                  ))}
+                </div>
               </div>
             </div>
           </section>
@@ -511,5 +563,17 @@ export default function App() {
         </div>
       </footer>
     </>
+  )
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <Toaster position="top-center" richColors expand={false} />
+      <Routes>
+        <Route path="/" element={<WaitlistPage />} />
+        <Route path="/admin" element={<AdminDashboard />} />
+      </Routes>
+    </BrowserRouter>
   )
 }
