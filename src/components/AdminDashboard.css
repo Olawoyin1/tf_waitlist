@@ -474,9 +474,22 @@
 }
 
 .td-date {
-  color: #a3a3a3 !important;
-  font-size: 12.5px !important;
+  color: #525252 !important;
+  font-size: 13.5px !important;
   white-space: nowrap;
+}
+
+.td-datetime {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.td-time {
+  color: #a3a3a3;
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .td-nil { color: #d4d4d4; }
@@ -638,6 +651,10 @@
   /* Ensure pos and company are visible */
   .td-pos, .td-company { display: flex; width: auto; color: #525252 !important; }
   .td-pos { font-size: 13.5px !important; }
+
+  .td-datetime {
+    align-items: flex-end;
+  }
 
   /* button labels */
   .dash-btn--ghost .btn-label,

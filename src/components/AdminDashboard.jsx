@@ -90,9 +90,10 @@ export function AdminDashboard() {
 
   const handleExportCSV = () => {
     if (!entries.length) return;
-    let csv = 'Position,Name,Email,Role,Organisation,Date\n';
+    let csv = 'Position,Name,Email,Role,Organisation,Date,Time\n';
     entries.forEach(e => {
       const date = new Date(e.createdAt).toLocaleDateString('en-GB');
+      const time = new Date(e.createdAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
       csv += [
         e.position,
         `"${(e.fullName || '').replace(/"/g, '""')}"`,
@@ -100,6 +101,7 @@ export function AdminDashboard() {
         `"${(e.interest || '').replace(/"/g, '""')}"`,
         `"${(e.company  || '').replace(/"/g, '""')}"`,
         `"${date}"`,
+        `"${time}"`
       ].join(',') + '\n';
     });
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -145,12 +147,16 @@ export function AdminDashboard() {
         : <span className="td-nil">—</span>,
     }),
     columnHelper.accessor('createdAt', {
-      header: 'Date',
-      cell: info => (
-        <span className="td-date">
-          {new Date(info.getValue()).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-        </span>
-      ),
+      header: 'Date & Time',
+      cell: info => {
+        const d = new Date(info.getValue());
+        return (
+          <div className="td-datetime">
+            <span className="td-date">{d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+            <span className="td-time">{d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</span>
+          </div>
+        );
+      },
     }),
   ], []);
 
