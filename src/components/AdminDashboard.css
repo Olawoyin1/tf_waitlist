@@ -587,36 +587,57 @@
     border-bottom: 1px solid rgba(0,0,0,0.06);
     padding: 14px 16px;
     position: relative;
+    background: #fff;
+    border: 1px solid rgba(0,0,0,0.06);
+    border-radius: 8px;
+    margin-bottom: 12px;
   }
-  .dash-table tbody tr:last-child { border-bottom: none; }
+  .dash-table tbody tr:last-child { margin-bottom: 0; }
   .dash-table tbody tr:hover td { background: transparent; }
 
   .dash-table td {
     border-bottom: none;
-    padding: 2px 0;
-    font-size: 13px;
+    padding: 6px 0;
+    font-size: 13.5px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    text-align: right;
   }
 
-  /* name row — bigger */
+  .dash-table td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: #a3a3a3;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-right: 12px;
+    text-align: left;
+  }
+
+  /* Make sure avatars don't break flex layout */
   .td-name {
-    font-size: 14px !important;
-    margin-bottom: 4px;
+    text-align: right;
+    justify-content: space-between;
+  }
+  
+  .td-name__wrap {
+    justify-content: flex-end;
   }
 
-  /* hide position, company on mobile */
-  .td-pos,
-  .td-company { display: none; }
-
-  /* email smaller */
-  .td-email { color: #a3a3a3 !important; }
-
-  /* date aligned right */
+  /* Ensure date doesn't get absolutely positioned anymore */
   .td-date {
-    position: absolute;
-    top: 14px;
-    right: 16px;
-    font-size: 11.5px !important;
+    position: static;
+    font-size: 13.5px !important;
   }
+
+  /* Keep email visible but smaller */
+  .td-email { color: #525252 !important; }
+
+  /* Ensure pos and company are visible */
+  .td-pos, .td-company { display: flex; width: auto; color: #525252 !important; }
+  .td-pos { font-size: 13.5px !important; }
 
   /* button labels */
   .dash-btn--ghost .btn-label,

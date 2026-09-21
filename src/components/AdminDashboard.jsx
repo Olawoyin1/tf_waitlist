@@ -1,6 +1,24 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { RiDownloadCloud2Line, RiRefreshLine, RiLogoutBoxLine, RiUserLine, RiGroupLine, RiBuildingLine } from 'react-icons/ri';
+import {
+  useReactTable,
+  getCoreRowModel,
+  getSortedRowModel,
+  getFilteredRowModel,
+  flexRender,
+  createColumnHelper,
+} from '@tanstack/react-table';
+import {
+  RiDownloadCloud2Line,
+  RiRefreshLine,
+  RiLogoutBoxLine,
+  RiGroupLine,
+  RiUserLine,
+  RiBuildingLine,
+  RiArrowUpSLine,
+  RiArrowDownSLine,
+  RiArrowUpDownLine,
+} from 'react-icons/ri';
 import { toast } from 'sonner';
 import './AdminDashboard.css';
 
@@ -10,120 +28,149 @@ const TF_LOGO = (
   <svg viewBox="0 0 172 172" width="26" height="26" aria-hidden="true">
     <path fill="currentColor" d="M86,0C38.5,0,0,38.5,0,86s38.5,86,86,86,86-38.5,86-86S133.5,0,86,0ZM127.56,122.24l-1.5,1.44c-2.73,2.62-5.72,4.98-8.9,7.01-8,5.12-17.24,8.21-26.72,8.93-1.51.11-3,.17-4.45.17s-2.94-.06-4.44-.17c-9.49-.72-18.73-3.81-26.73-8.93-3.18-2.04-6.18-4.4-8.9-7.02l-1.5-1.44V52.59h17.89v61.55c5.87,4.32,12.76,6.94,20.03,7.59,2.41.22,4.86.22,7.28,0,7.27-.65,14.17-3.27,20.03-7.59v-51.81h-14.72v44.85h-17.89V32.82l4.43-.4c3-.27,6.04-.27,9.04,0l4.43.4v11.62h32.62v77.8Z"/>
   </svg>
-)
+);
 
-function roleBadgeClass(role) {
-  const map = {
-    practising: 'badge-practising',
-    specialist:  'badge-specialist',
-    leader:      'badge-leader',
-    consultant:  'badge-consultant',
-    business:    'badge-business',
-    talent:      'badge-talent',
-    both:        'badge-both',
-    other:       'badge-other',
-  }
-  return map[(role || '').toLowerCase()] || 'badge-other'
-}
-
-function Avatar({ name }) {
-  const initials = (name || '?').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
-  const colors = ['#e0f2fe','#fef3c7','#d1fae5','#ede9fe','#fee2e2','#fce7f3']
-  const idx = name ? name.charCodeAt(0) % colors.length : 0
-  return (
-    <span className="av-chip" style={{ background: colors[idx] }}>
-      {initials}
-    </span>
-  )
-}
+const columnHelper = createColumnHelper();
 
 export function AdminDashboard() {
-  const [email, setEmail]               = useState('')
-  const [password, setPassword]         = useState('')
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [loading, setLoading]           = useState(false)
-  const [entries, setEntries]           = useState([])
-  const [search, setSearch]             = useState('')
+  const [email, setEmail]                     = useState('');
+  const [password, setPassword]               = useState('');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loading, setLoading]                 = useState(false);
+  const [entries, setEntries]                 = useState([]);
+  const [globalFilter, setGlobalFilter]       = useState('');
+  const [sorting, setSorting]                 = useState([]);
 
   useEffect(() => {
-    const saved = sessionStorage.getItem('tf_admin_auth')
+    const saved = sessionStorage.getItem('tf_admin_auth');
     if (saved) {
       try {
-        const { savedEmail, savedPassword } = JSON.parse(saved)
-        setEmail(savedEmail)
-        setPassword(savedPassword)
-        fetchEntries(savedEmail, savedPassword)
+        const { savedEmail, savedPassword } = JSON.parse(saved);
+        setEmail(savedEmail);
+        setPassword(savedPassword);
+        fetchEntries(savedEmail, savedPassword);
       } catch {
-        sessionStorage.removeItem('tf_admin_auth')
+        sessionStorage.removeItem('tf_admin_auth');
       }
     }
-  }, [])
+  }, []);
 
   const fetchEntries = async (authEmail, authPassword) => {
-    setLoading(true)
+    setLoading(true);
     try {
       const res  = await fetch(API_URL, {
-        headers: { 'x-admin-email': authEmail, 'x-admin-password': authPassword }
-      })
-      const data = await res.json()
+        headers: { 'x-admin-email': authEmail, 'x-admin-password': authPassword },
+      });
+      const data = await res.json();
       if (!res.ok) {
         if (res.status === 401) {
-          sessionStorage.removeItem('tf_admin_auth')
-          setIsAuthenticated(false)
-          toast.error('Invalid credentials')
+          sessionStorage.removeItem('tf_admin_auth');
+          setIsAuthenticated(false);
+          toast.error('Invalid credentials');
         } else {
-          toast.error(data.message || 'Failed to fetch entries')
+          toast.error(data.message || 'Failed to fetch entries');
         }
-        setLoading(false)
-        return
+        setLoading(false);
+        return;
       }
-      setEntries(data.data)
-      setIsAuthenticated(true)
-      sessionStorage.setItem('tf_admin_auth', JSON.stringify({ savedEmail: authEmail, savedPassword: authPassword }))
+      setEntries(data.data);
+      setIsAuthenticated(true);
+      sessionStorage.setItem('tf_admin_auth', JSON.stringify({ savedEmail: authEmail, savedPassword: authPassword }));
     } catch {
-      toast.error('Network error. Please try again.')
+      toast.error('Network error. Please try again.');
     }
-    setLoading(false)
-  }
+    setLoading(false);
+  };
 
   const handleLogin = (e) => {
-    e.preventDefault()
-    if (!email || !password) return
-    fetchEntries(email, password)
-  }
+    e.preventDefault();
+    if (!email || !password) return;
+    fetchEntries(email, password);
+  };
 
   const handleExportCSV = () => {
-    if (!entries.length) return
-    let csv = 'Position,Name,Email,Role,Company,Date\n'
+    if (!entries.length) return;
+    let csv = 'Position,Name,Email,Role,Organisation,Date\n';
     entries.forEach(e => {
-      const date = new Date(e.createdAt).toLocaleDateString()
+      const date = new Date(e.createdAt).toLocaleDateString('en-GB');
       csv += [
         e.position,
-        `"${e.fullName.replace(/"/g,'""')}"`,
-        `"${e.email.replace(/"/g,'""')}"`,
-        `"${e.interest}"`,
-        `"${(e.company||'').replace(/"/g,'""')}"`,
+        `"${(e.fullName || '').replace(/"/g, '""')}"`,
+        `"${(e.email    || '').replace(/"/g, '""')}"`,
+        `"${(e.interest || '').replace(/"/g, '""')}"`,
+        `"${(e.company  || '').replace(/"/g, '""')}"`,
         `"${date}"`,
-      ].join(',') + '\n'
-    })
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-    const url  = URL.createObjectURL(blob)
-    const a    = document.createElement('a')
-    a.href     = url
-    a.download = `tf_waitlist_${new Date().toISOString().split('T')[0]}.csv`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-  }
+      ].join(',') + '\n';
+    });
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a    = Object.assign(document.createElement('a'), { href: url, download: `tf_waitlist_${new Date().toISOString().split('T')[0]}.csv` });
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
 
   const handleLogout = () => {
-    sessionStorage.removeItem('tf_admin_auth')
-    setIsAuthenticated(false)
-    setEmail('')
-    setPassword('')
-  }
+    sessionStorage.removeItem('tf_admin_auth');
+    setIsAuthenticated(false);
+    setEmail('');
+    setPassword('');
+  };
 
-  // ── Login ────────────────────────────────────────────────────────────────
+  // ── TanStack columns ──────────────────────────────────────────────────────
+  const columns = useMemo(() => [
+    columnHelper.accessor('position', {
+      header: '#',
+      cell: info => <span className="td-pos">{info.getValue()}</span>,
+      size: 56,
+    }),
+    columnHelper.accessor('fullName', {
+      header: 'Name',
+      cell: info => <span className="td-name">{info.getValue()}</span>,
+    }),
+    columnHelper.accessor('email', {
+      header: 'Email',
+      cell: info => <span className="td-email">{info.getValue()}</span>,
+    }),
+    columnHelper.accessor('interest', {
+      header: 'Role',
+      cell: info => (
+        <span className="dash-badge">{info.getValue() || '—'}</span>
+      ),
+    }),
+    columnHelper.accessor('company', {
+      header: 'Organisation',
+      cell: info => info.getValue()
+        ? <span>{info.getValue()}</span>
+        : <span className="td-nil">—</span>,
+    }),
+    columnHelper.accessor('createdAt', {
+      header: 'Date',
+      cell: info => (
+        <span className="td-date">
+          {new Date(info.getValue()).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+        </span>
+      ),
+    }),
+  ], []);
+
+  const table = useReactTable({
+    data: entries,
+    columns,
+    state: { globalFilter, sorting },
+    onGlobalFilterChange: setGlobalFilter,
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+  });
+
+  // Stats
+  const roleCount   = entries.reduce((acc, e) => { const r = e.interest || 'other'; acc[r] = (acc[r] || 0) + 1; return acc; }, {});
+  const topRole     = Object.entries(roleCount).sort((a, b) => b[1] - a[1])[0]?.[0] || '—';
+  const withCompany = entries.filter(e => e.company?.trim()).length;
+
+  // ── Login ─────────────────────────────────────────────────────────────────
   if (!isAuthenticated) {
     return (
       <div className="admin-login-wrapper">
@@ -169,26 +216,10 @@ export function AdminDashboard() {
           </motion.div>
         </div>
       </div>
-    )
+    );
   }
 
   // ── Dashboard ─────────────────────────────────────────────────────────────
-  const filtered = entries.filter(e =>
-    !search ||
-    e.fullName.toLowerCase().includes(search.toLowerCase()) ||
-    e.email.toLowerCase().includes(search.toLowerCase()) ||
-    (e.company || '').toLowerCase().includes(search.toLowerCase())
-  )
-
-  const roleCount = entries.reduce((acc, e) => {
-    const r = (e.interest || 'other').toLowerCase()
-    acc[r] = (acc[r] || 0) + 1
-    return acc
-  }, {})
-
-  const topRole = Object.entries(roleCount).sort((a,b) => b[1]-a[1])[0]?.[0] || '—'
-  const withCompany = entries.filter(e => e.company && e.company.trim()).length
-
   return (
     <div className="admin-dashboard-wrapper">
 
@@ -220,7 +251,7 @@ export function AdminDashboard() {
 
       <div className="dash-inner">
 
-        {/* Page heading */}
+        {/* Heading */}
         <div className="dash-heading">
           <div>
             <h1 className="dash-heading__title">Waitlist Registrations</h1>
@@ -231,57 +262,46 @@ export function AdminDashboard() {
         {/* Stat cards */}
         <div className="dash-stats">
           <div className="dash-stat">
-            <div className="dash-stat__icon dash-stat__icon--blue">
-              <RiGroupLine size={18} />
-            </div>
-            <div>
-              <p className="dash-stat__n">{entries.length}</p>
-              <p className="dash-stat__l">Total signups</p>
-            </div>
+            <div className="dash-stat__icon dash-stat__icon--blue"><RiGroupLine size={18} /></div>
+            <div><p className="dash-stat__n">{entries.length}</p><p className="dash-stat__l">Total signups</p></div>
           </div>
           <div className="dash-stat">
-            <div className="dash-stat__icon dash-stat__icon--gold">
-              <RiUserLine size={18} />
-            </div>
-            <div>
-              <p className="dash-stat__n" style={{ textTransform: 'capitalize' }}>{topRole}</p>
-              <p className="dash-stat__l">Most common role</p>
-            </div>
+            <div className="dash-stat__icon dash-stat__icon--gold"><RiUserLine size={18} /></div>
+            <div><p className="dash-stat__n" style={{ textTransform: 'capitalize' }}>{topRole}</p><p className="dash-stat__l">Most common role</p></div>
           </div>
           <div className="dash-stat">
-            <div className="dash-stat__icon dash-stat__icon--green">
-              <RiBuildingLine size={18} />
-            </div>
-            <div>
-              <p className="dash-stat__n">{withCompany}</p>
-              <p className="dash-stat__l">With organisation</p>
-            </div>
+            <div className="dash-stat__icon dash-stat__icon--green"><RiBuildingLine size={18} /></div>
+            <div><p className="dash-stat__n">{withCompany}</p><p className="dash-stat__l">With organisation</p></div>
           </div>
           <div className="dash-stat">
-            <div className="dash-stat__icon dash-stat__icon--navy">
-              <RiDownloadCloud2Line size={18} />
-            </div>
+            <div className="dash-stat__icon dash-stat__icon--navy"><RiDownloadCloud2Line size={18} /></div>
             <div>
-              <p className="dash-stat__n">{entries.length > 0 ? new Date(entries[entries.length-1].createdAt).toLocaleDateString('en-GB',{day:'numeric',month:'short'}) : '—'}</p>
+              <p className="dash-stat__n">
+                {entries.length > 0
+                  ? new Date(entries[entries.length - 1].createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+                  : '—'}
+              </p>
               <p className="dash-stat__l">Latest signup</p>
             </div>
           </div>
         </div>
 
-        {/* Search + table */}
+        {/* Search + TanStack Table */}
         <div className="dash-table-section">
           <div className="dash-table-toolbar">
             <div className="dash-search-wrap">
-              <svg className="dash-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="15" height="15"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+              <svg className="dash-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="15" height="15">
+                <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+              </svg>
               <input
                 className="dash-search"
                 type="text"
                 placeholder="Search by name, email or company…"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
+                value={globalFilter}
+                onChange={e => setGlobalFilter(e.target.value)}
               />
             </div>
-            <span className="dash-count">{filtered.length} of {entries.length}</span>
+            <span className="dash-count">{table.getRowModel().rows.length} of {entries.length}</span>
           </div>
 
           <div className="dash-table-wrap">
@@ -293,50 +313,51 @@ export function AdminDashboard() {
             ) : (
               <table className="dash-table">
                 <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Role</th>
-                    <th>Organisation</th>
-                    <th>Date</th>
-                  </tr>
+                  {table.getHeaderGroups().map(headerGroup => (
+                    <tr key={headerGroup.id}>
+                      {headerGroup.headers.map(header => (
+                        <th
+                          key={header.id}
+                          onClick={header.column.getToggleSortingHandler()}
+                          style={{ cursor: header.column.getCanSort() ? 'pointer' : 'default', userSelect: 'none' }}
+                        >
+                          <div className="th-inner">
+                            {flexRender(header.column.columnDef.header, header.getContext())}
+                            {header.column.getCanSort() && (
+                              <span className="sort-icon">
+                                {header.column.getIsSorted() === 'asc'  ? <RiArrowUpSLine   size={14} /> :
+                                 header.column.getIsSorted() === 'desc' ? <RiArrowDownSLine size={14} /> :
+                                 <RiArrowUpDownLine size={14} style={{ opacity: 0.35 }} />}
+                              </span>
+                            )}
+                          </div>
+                        </th>
+                      ))}
+                    </tr>
+                  ))}
                 </thead>
                 <tbody>
-                  {filtered.map((entry, i) => (
-                    <motion.tr
-                      key={entry._id}
-                      initial={{ opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.02, duration: 0.25 }}
-                    >
-                      <td className="td-pos">{entry.position}</td>
-                      <td className="td-name">
-                        <div className="td-name__wrap">
-                          <Avatar name={entry.fullName} />
-                          <span>{entry.fullName}</span>
-                        </div>
-                      </td>
-                      <td className="td-email">{entry.email}</td>
-                      <td>
-                        <span className={`dash-badge ${roleBadgeClass(entry.interest)}`}>
-                          {entry.interest || 'other'}
-                        </span>
-                      </td>
-                      <td className="td-company">{entry.company || <span className="td-nil">—</span>}</td>
-                      <td className="td-date">
-                        {new Date(entry.createdAt).toLocaleDateString('en-GB', {
-                          day: 'numeric', month: 'short', year: 'numeric'
-                        })}
-                      </td>
-                    </motion.tr>
-                  ))}
-                  {filtered.length === 0 && (
+                  {table.getRowModel().rows.length === 0 ? (
                     <tr>
-                      <td colSpan="6" className="dash-empty">
-                        {search ? 'No results match your search.' : 'No registrations yet.'}
+                      <td colSpan={columns.length} className="dash-empty">
+                        {globalFilter ? 'No results match your search.' : 'No registrations yet.'}
                       </td>
                     </tr>
+                  ) : (
+                    table.getRowModel().rows.map((row, i) => (
+                      <motion.tr
+                        key={row.id}
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.02, duration: 0.25 }}
+                      >
+                        {row.getVisibleCells().map(cell => (
+                          <td key={cell.id} data-label={cell.column.columnDef.header}>
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          </td>
+                        ))}
+                      </motion.tr>
+                    ))
                   )}
                 </tbody>
               </table>
@@ -346,5 +367,5 @@ export function AdminDashboard() {
 
       </div>
     </div>
-  )
+  );
 }
