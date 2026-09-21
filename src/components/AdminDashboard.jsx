@@ -116,6 +116,10 @@ export function AdminDashboard() {
     setSortConfig({ key, direction });
   };
 
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const rowsPerPage = 10;
+
   const sortedAndFilteredEntries = useMemo(() => {
     let sortableItems = [...entries];
     
@@ -149,6 +153,17 @@ export function AdminDashboard() {
     
     return sortableItems;
   }, [entries, search, sortConfig]);
+
+  // Reset to page 1 on search or sort change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, sortConfig]);
+
+  const totalPages = Math.ceil(sortedAndFilteredEntries.length / rowsPerPage);
+  const paginatedEntries = sortedAndFilteredEntries.slice(
+    (currentPage - 1) * rowsPerPage,
+    currentPage * rowsPerPage
+  );
 
   // Stats
   const roleCount   = entries.reduce((acc, e) => { const r = e.interest || 'other'; acc[r] = (acc[r] || 0) + 1; return acc; }, {});
@@ -295,7 +310,7 @@ export function AdminDashboard() {
                 onChange={e => setSearch(e.target.value)}
               />
             </div>
-            <span className="dash-count">{sortedAndFilteredEntries.length} of {entries.length}</span>
+            <span className="dash-count">{sortedAndFilteredEntries.length} found</span>
           </div>
 
           <div className="dash-table-wrap">
@@ -329,14 +344,14 @@ export function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {sortedAndFilteredEntries.length === 0 ? (
+                  {paginatedEntries.length === 0 ? (
                     <tr>
                       <td colSpan={6} className="dash-empty">
                         {search ? 'No results match your search.' : 'No registrations yet.'}
                       </td>
                     </tr>
                   ) : (
-                    sortedAndFilteredEntries.map((entry, i) => {
+                    paginatedEntries.map((entry, i) => {
                       const d = new Date(entry.createdAt);
                       return (
                         <motion.tr
@@ -374,6 +389,42 @@ export function AdminDashboard() {
               </table>
             )}
           </div>
+          
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="dash-pagination">
+              <span className="pagination-info">
+                Showing {((currentPage - 1) * rowsPerPage) + 1} to {Math.min(currentPage * rowsPerPage, sortedAndFilteredEntries.length)} of {sortedAndFilteredEntries.length} entries
+              </span>
+              <div className="pagination-buttons">
+                <button 
+                  className="dash-btn dash-btn--ghost" 
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(p => p - 1)}
+                >
+                  Previous
+                </button>
+                <div className="pagination-numbers">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                    <button
+                      key={page}
+                      className={`pagination-number ${currentPage === page ? 'active' : ''}`}
+                      onClick={() => setCurrentPage(page)}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                </div>
+                <button 
+                  className="dash-btn dash-btn--ghost" 
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage(p => p + 1)}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
       </div>
