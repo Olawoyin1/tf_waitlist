@@ -1,14 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
-  useReactTable,
-  getCoreRowModel,
-  getSortedRowModel,
-  getFilteredRowModel,
-  flexRender,
-  createColumnHelper,
-} from '@tanstack/react-table';
-import {
   RiDownloadCloud2Line,
   RiRefreshLine,
   RiLogoutBoxLine,
@@ -17,7 +9,6 @@ import {
   RiBuildingLine,
   RiArrowUpSLine,
   RiArrowDownSLine,
-  RiArrowUpDownLine,
 } from 'react-icons/ri';
 import { toast } from 'sonner';
 import './AdminDashboard.css';
@@ -30,16 +21,14 @@ const TF_LOGO = (
   </svg>
 );
 
-const columnHelper = createColumnHelper();
-
 export function AdminDashboard() {
   const [email, setEmail]                     = useState('');
   const [password, setPassword]               = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading]                 = useState(false);
   const [entries, setEntries]                 = useState([]);
-  const [globalFilter, setGlobalFilter]       = useState('');
-  const [sorting, setSorting]                 = useState([]);
+  const [search, setSearch]                   = useState('');
+  const [sortConfig, setSortConfig]           = useState({ key: 'createdAt', direction: 'desc' });
 
   useEffect(() => {
     const saved = sessionStorage.getItem('tf_admin_auth');
@@ -119,57 +108,47 @@ export function AdminDashboard() {
     setPassword('');
   };
 
-  // ── TanStack columns ──────────────────────────────────────────────────────
-  const columns = useMemo(() => [
-    columnHelper.accessor('position', {
-      header: '#',
-      cell: info => <span className="td-pos">{info.getValue()}</span>,
-      size: 56,
-    }),
-    columnHelper.accessor('fullName', {
-      header: 'Name',
-      cell: info => <span className="td-name">{info.getValue()}</span>,
-    }),
-    columnHelper.accessor('email', {
-      header: 'Email',
-      cell: info => <span className="td-email">{info.getValue()}</span>,
-    }),
-    columnHelper.accessor('interest', {
-      header: 'Role',
-      cell: info => (
-        <span className="dash-badge">{info.getValue() || '—'}</span>
-      ),
-    }),
-    columnHelper.accessor('company', {
-      header: 'Organisation',
-      cell: info => info.getValue()
-        ? <span>{info.getValue()}</span>
-        : <span className="td-nil">—</span>,
-    }),
-    columnHelper.accessor('createdAt', {
-      header: 'Date & Time',
-      cell: info => {
-        const d = new Date(info.getValue());
-        return (
-          <div className="td-datetime">
-            <span className="td-date">{d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
-            <span className="td-time">{d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</span>
-          </div>
-        );
-      },
-    }),
-  ], []);
+  const requestSort = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
 
-  const table = useReactTable({
-    data: entries,
-    columns,
-    state: { globalFilter, sorting },
-    onGlobalFilterChange: setGlobalFilter,
-    onSortingChange: setSorting,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-  });
+  const sortedAndFilteredEntries = useMemo(() => {
+    let sortableItems = [...entries];
+    
+    // Filter
+    if (search) {
+      const lowerSearch = search.toLowerCase();
+      sortableItems = sortableItems.filter(
+        item => 
+          (item.fullName || '').toLowerCase().includes(lowerSearch) ||
+          (item.email || '').toLowerCase().includes(lowerSearch) ||
+          (item.company || '').toLowerCase().includes(lowerSearch)
+      );
+    }
+    
+    // Sort
+    sortableItems.sort((a, b) => {
+      let aValue = a[sortConfig.key] || '';
+      let bValue = b[sortConfig.key] || '';
+      
+      if (typeof aValue === 'string') aValue = aValue.toLowerCase();
+      if (typeof bValue === 'string') bValue = bValue.toLowerCase();
+      
+      if (aValue < bValue) {
+        return sortConfig.direction === 'asc' ? -1 : 1;
+      }
+      if (aValue > bValue) {
+        return sortConfig.direction === 'asc' ? 1 : -1;
+      }
+      return 0;
+    });
+    
+    return sortableItems;
+  }, [entries, search, sortConfig]);
 
   // Stats
   const roleCount   = entries.reduce((acc, e) => { const r = e.interest || 'other'; acc[r] = (acc[r] || 0) + 1; return acc; }, {});
@@ -224,6 +203,15 @@ export function AdminDashboard() {
       </div>
     );
   }
+
+  const SortIcon = ({ columnKey }) => {
+    if (sortConfig.key !== columnKey) {
+      return <RiArrowUpSLine size={14} className="sort-icon inactive" />;
+    }
+    return sortConfig.direction === 'asc' ? 
+      <RiArrowUpSLine size={14} className="sort-icon active" /> : 
+      <RiArrowDownSLine size={14} className="sort-icon active" />;
+  };
 
   // ── Dashboard ─────────────────────────────────────────────────────────────
   return (
@@ -292,7 +280,7 @@ export function AdminDashboard() {
           </div>
         </div>
 
-        {/* Search + TanStack Table */}
+        {/* Search + Custom Table */}
         <div className="dash-table-section">
           <div className="dash-table-toolbar">
             <div className="dash-search-wrap">
@@ -303,11 +291,11 @@ export function AdminDashboard() {
                 className="dash-search"
                 type="text"
                 placeholder="Search by name, email or company…"
-                value={globalFilter}
-                onChange={e => setGlobalFilter(e.target.value)}
+                value={search}
+                onChange={e => setSearch(e.target.value)}
               />
             </div>
-            <span className="dash-count">{table.getRowModel().rows.length} of {entries.length}</span>
+            <span className="dash-count">{sortedAndFilteredEntries.length} of {entries.length}</span>
           </div>
 
           <div className="dash-table-wrap">
@@ -319,51 +307,68 @@ export function AdminDashboard() {
             ) : (
               <table className="dash-table">
                 <thead>
-                  {table.getHeaderGroups().map(headerGroup => (
-                    <tr key={headerGroup.id}>
-                      {headerGroup.headers.map(header => (
-                        <th
-                          key={header.id}
-                          onClick={header.column.getToggleSortingHandler()}
-                          style={{ cursor: header.column.getCanSort() ? 'pointer' : 'default', userSelect: 'none' }}
-                        >
-                          <div className="th-inner">
-                            {flexRender(header.column.columnDef.header, header.getContext())}
-                            {header.column.getCanSort() && (
-                              <span className="sort-icon">
-                                {header.column.getIsSorted() === 'asc'  ? <RiArrowUpSLine   size={14} /> :
-                                 header.column.getIsSorted() === 'desc' ? <RiArrowDownSLine size={14} /> :
-                                 <RiArrowUpDownLine size={14} style={{ opacity: 0.35 }} />}
-                              </span>
-                            )}
-                          </div>
-                        </th>
-                      ))}
-                    </tr>
-                  ))}
+                  <tr>
+                    <th onClick={() => requestSort('position')}>
+                      <div className="th-inner"># <SortIcon columnKey="position" /></div>
+                    </th>
+                    <th onClick={() => requestSort('fullName')}>
+                      <div className="th-inner">Name <SortIcon columnKey="fullName" /></div>
+                    </th>
+                    <th onClick={() => requestSort('email')}>
+                      <div className="th-inner">Email <SortIcon columnKey="email" /></div>
+                    </th>
+                    <th onClick={() => requestSort('interest')}>
+                      <div className="th-inner">Role <SortIcon columnKey="interest" /></div>
+                    </th>
+                    <th onClick={() => requestSort('company')}>
+                      <div className="th-inner">Organisation <SortIcon columnKey="company" /></div>
+                    </th>
+                    <th onClick={() => requestSort('createdAt')}>
+                      <div className="th-inner">Date & Time <SortIcon columnKey="createdAt" /></div>
+                    </th>
+                  </tr>
                 </thead>
                 <tbody>
-                  {table.getRowModel().rows.length === 0 ? (
+                  {sortedAndFilteredEntries.length === 0 ? (
                     <tr>
-                      <td colSpan={columns.length} className="dash-empty">
-                        {globalFilter ? 'No results match your search.' : 'No registrations yet.'}
+                      <td colSpan={6} className="dash-empty">
+                        {search ? 'No results match your search.' : 'No registrations yet.'}
                       </td>
                     </tr>
                   ) : (
-                    table.getRowModel().rows.map((row, i) => (
-                      <motion.tr
-                        key={row.id}
-                        initial={{ opacity: 0, y: 6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: i * 0.02, duration: 0.25 }}
-                      >
-                        {row.getVisibleCells().map(cell => (
-                          <td key={cell.id} data-label={cell.column.columnDef.header}>
-                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    sortedAndFilteredEntries.map((entry, i) => {
+                      const d = new Date(entry.createdAt);
+                      return (
+                        <motion.tr
+                          key={entry._id}
+                          initial={{ opacity: 0, y: 6 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: i * 0.015, duration: 0.2 }}
+                        >
+                          <td data-label="#">
+                            <span className="td-pos">{entry.position}</span>
                           </td>
-                        ))}
-                      </motion.tr>
-                    ))
+                          <td data-label="Name">
+                            <span className="td-name">{entry.fullName}</span>
+                          </td>
+                          <td data-label="Email">
+                            <span className="td-email">{entry.email}</span>
+                          </td>
+                          <td data-label="Role">
+                            <span className="dash-badge">{entry.interest || '—'}</span>
+                          </td>
+                          <td data-label="Organisation">
+                            {entry.company ? <span>{entry.company}</span> : <span className="td-nil">—</span>}
+                          </td>
+                          <td data-label="Date & Time">
+                            <div className="td-datetime">
+                              <span className="td-date">{d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                              <span className="td-time">{d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</span>
+                            </div>
+                          </td>
+                        </motion.tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>

@@ -424,6 +424,38 @@
   font-weight: 700;
   border-bottom: 2px solid rgba(0,0,0,0.08);
   white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s;
+}
+
+.dash-table th:hover {
+  background: #f4f4f5;
+}
+
+.th-inner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sort-icon {
+  display: flex;
+  transition: color 0.15s, opacity 0.15s;
+}
+
+.sort-icon.active {
+  color: #09090b;
+  opacity: 1;
+}
+
+.sort-icon.inactive {
+  color: #a1a1aa;
+  opacity: 0;
+}
+
+.dash-table th:hover .sort-icon.inactive {
+  opacity: 0.4;
 }
 
 .dash-table td {
